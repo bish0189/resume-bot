@@ -82,6 +82,7 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   max-height: 500px;
   overflow-y: auto; /* Scrollable if the content is too long */
+  text-align: left; /* Ensure the text is aligned to the left */
 }
 
 .response-message-container h3 {

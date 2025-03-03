@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { useSquid } from '@squidcloud/react';
+import { marked } from 'marked'; // Import the Markdown parser
 import './uploadResume.css';  // Import custom CSS for styling
 
 const FileUploadTest: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [responseMessage, setResponseMessage] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);  // To manage loading state
-  const [error, setError] = useState<string>('');  // For error handling
-  
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
   const squid = useSquid();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,7 +30,6 @@ const FileUploadTest: React.FC = () => {
     event.preventDefault();
   };
 
-  // Convert the ArrayBuffer to a Base64 string
   const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
     const binary = String.fromCharCode(...new Uint8Array(buffer));
     return window.btoa(binary);
@@ -39,9 +38,9 @@ const FileUploadTest: React.FC = () => {
   const handleFileUpload = async (file: File) => {
     if (!file || !squid) return;
 
-    setLoading(true); // Start the loading spinner
-    setError('');  // Clear any previous errors
-
+    setLoading(true);
+    setError('');
+    
     try {
       setUploadStatus('Uploading...');
       
@@ -52,23 +51,19 @@ const FileUploadTest: React.FC = () => {
       const squidFile = {
         originalName: file.name,
         lastModified: file.lastModified,
-        data: base64Data, // Send base64 string instead of ArrayBuffer
+        data: base64Data, 
         size: file.size,
         mimetype: file.type,
       };
-
-      console.log('SquidFile object being sent:', squidFile);
 
       const response = await squid.executeFunction('processResume', {
         files: [squidFile],
         otherParams,
       });
 
-      console.log('Response from Squid AI:', response);
-
       if (response) {
         setUploadStatus('File uploaded and processed successfully!');
-        setResponseMessage(response.message); // Assuming the formatted text is inside response.message
+        setResponseMessage(response.message);
       } else {
         setUploadStatus('File upload failed.');
         setResponseMessage('There was an error with the file upload.');
@@ -77,8 +72,13 @@ const FileUploadTest: React.FC = () => {
       setUploadStatus('Error uploading file: ');
       setError('Error during upload: ');
     } finally {
-      setLoading(false);  // End the loading spinner
+      setLoading(false);
     }
+  };
+
+  // Convert Markdown to HTML
+  const renderMarkdown = (markdown: string) => {
+    return marked(markdown); // Converts markdown text to HTML
   };
 
   return (
@@ -88,8 +88,8 @@ const FileUploadTest: React.FC = () => {
       <div
         className="drag-area"
         onClick={() => document.getElementById("fileInput")?.click()}
-        onDrop={handleDrop}  // Handle drop event
-        onDragOver={handleDragOver}  // Handle drag over event
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
       >
         {file ? (
           <div className="file-preview">
@@ -131,13 +131,10 @@ const FileUploadTest: React.FC = () => {
       )}
 
       {responseMessage && (
-        <div className="response-message-container">
-          <h3>Formatted Resume</h3>
-          <div
-            className="formatted-text"
-            dangerouslySetInnerHTML={{ __html: responseMessage.replace(/\n/g, "<br />") }} // This replaces newlines with <br />
-          />
-        </div>
+        <div
+          className="response-message-container"
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(responseMessage) }}  // Render Markdown as HTML
+        />
       )}
 
       {error && <p className="error-message">{error}</p>}

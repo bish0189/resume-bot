@@ -162,7 +162,7 @@ export class ExampleService extends SquidService {
     // The response from the agent is expected to be a more readable version of the resume text
     return { 
       status: 'success', 
-      message: `File ${file.originalName} processed successfully! Here’s the formatted resume text: ${response}` 
+      message: `File ${file.originalName} processed successfully! Here’s the formatted resume text: \n\n ${response}` 
     };
   } catch (error) {
     return { 
