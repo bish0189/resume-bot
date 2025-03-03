@@ -1,0 +1,69 @@
+/* uploadResume.css */
+.drag-area {
+  border: 2px dashed #007bff;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.drag-area:hover {
+  background-color: #f1f1f1;
+}
+
+.drag-area .drag-text {
+  font-size: 16px;
+  color: #007bff;
+}
+
+.upload-prompt p {
+  color: #007bff;
+  font-size: 16px;
+}
+
+.file-preview {
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+.file-name {
+  font-weight: bold;
+}
+
+.file-size {
+  color: gray;
+}
+
+.upload-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.upload-button:hover {
+  background-color: #0056b3;
+}
+
+.status-message.loading {
+  color: blue;
+}
+
+.status-message.error {
+  color: red;
+}
+
+.status-message.success {
+  color: green;
+}
+
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-top: 10px;
+}

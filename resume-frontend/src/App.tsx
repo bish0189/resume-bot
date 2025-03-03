@@ -7,7 +7,7 @@ const App: React.FC = () => {
   return (
     <div className="App">
       <h1>Resume Upload Portal</h1>
-      <FileUpload />
+      <FileUploadTest />
     </div>
   );
 }

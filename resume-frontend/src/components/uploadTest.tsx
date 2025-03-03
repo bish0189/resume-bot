@@ -1,92 +1,142 @@
 import React, { useState } from "react";
 import { useSquid } from '@squidcloud/react';
+import './uploadResume.css';  // Import custom CSS for styling
 
-const FileUpload: React.FC = () => {
-    const [file, setFile] = useState<File | null>(null);
-    const [uploadStatus, setUploadStatus] = useState<string>('');
-    const [responseMessage, setResponseMessage] = useState<string>('');  // Store the AI response message
+const FileUploadTest: React.FC = () => {
+  const [file, setFile] = useState<File | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<string>('');
+  const [responseMessage, setResponseMessage] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);  // To manage loading state
+  const [error, setError] = useState<string>('');  // For error handling
   
-    // Use the Squid AI hook to get the Squid client
-    const squid = useSquid();
-  
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const uploadedFile = event.target.files ? event.target.files[0] : null;
-      if (uploadedFile) {
-        setFile(uploadedFile);
+  const squid = useSquid();
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const uploadedFile = event.target.files ? event.target.files[0] : null;
+    if (uploadedFile) {
+      setFile(uploadedFile);
+    }
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const uploadedFile = event.dataTransfer.files ? event.dataTransfer.files[0] : null;
+    if (uploadedFile) {
+      setFile(uploadedFile);
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+  };
+
+  // Convert the ArrayBuffer to a Base64 string
+  const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+    const binary = String.fromCharCode(...new Uint8Array(buffer));
+    return window.btoa(binary);
+  };
+
+  const handleFileUpload = async (file: File) => {
+    if (!file || !squid) return;
+
+    setLoading(true); // Start the loading spinner
+    setError('');  // Clear any previous errors
+
+    try {
+      setUploadStatus('Uploading...');
+      
+      const otherParams = { additionalInfo: 'Optional extra parameter' };
+      const arrayBuffer = await file.arrayBuffer();
+      const base64Data = arrayBufferToBase64(arrayBuffer);
+      
+      const squidFile = {
+        originalName: file.name,
+        lastModified: file.lastModified,
+        data: base64Data, // Send base64 string instead of ArrayBuffer
+        size: file.size,
+        mimetype: file.type,
+      };
+
+      console.log('SquidFile object being sent:', squidFile);
+
+      const response = await squid.executeFunction('processResume', {
+        files: [squidFile],
+        otherParams,
+      });
+
+      console.log('Response from Squid AI:', response);
+
+      if (response) {
+        setUploadStatus('File uploaded and processed successfully!');
+        setResponseMessage(response.message);
+      } else {
+        setUploadStatus('File upload failed.');
+        setResponseMessage('There was an error with the file upload.');
       }
-    };
+    } catch (error) {
+      setUploadStatus('Error uploading file: ');
+      setError('Error during upload: ');
+    } finally {
+      setLoading(false);  // End the loading spinner
+    }
+  };
 
-    // Convert the ArrayBuffer to a Base64 string
-    const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
-      const binary = String.fromCharCode(...new Uint8Array(buffer));
-      return window.btoa(binary);
-    };    
+  return (
+    <div className="file-upload-container">
+      <h2 className="header">Upload Your Resume</h2>
 
-    const handleFileUpload = async (file: File) => {
-      if (!file || !squid) return;  // Ensure file and squid client are available
-  
-      try {
-        setUploadStatus('Uploading...');
-  
-        // Additional parameters you may want to send
-        const otherParams = { additionalInfo: 'Optional extra parameter' };
-  
-        // Convert the file into an array buffer (binary data)
-        const arrayBuffer = await file.arrayBuffer();
-        
-        // Convert the arrayBuffer to Base64
-        const base64Data = arrayBufferToBase64(arrayBuffer);
-        
-        // Create an object with the correct file structure
-        const squidFile = {
-          originalName: file.name,
-          lastModified: file.lastModified,
-          data: base64Data, // Send base64 string instead of ArrayBuffer
-          size: file.size,
-          mimetype: file.type,
-        };
-
-        console.log('SquidFile object being sent:', squidFile);
-
-        // Call Squid AI backend function using executeFunction
-        const response = await squid.executeFunction('processResume', {
-          files: [squidFile],  // Send the file(s) in an array
-          otherParams,  // Any other parameters you want to send
-        });
-
-        // Log the full response to check if it's correct
-        console.log('Response from Squid AI:', response);
-
-        if (response) {
-          setUploadStatus('File uploaded and processed successfully!');
-          setResponseMessage(response.message);  // Display the message from backend
-        } else {
-          setUploadStatus('File upload failed.');
-          setResponseMessage('There was an error with the file upload.');
-        }
-      } catch (error) {
-        setUploadStatus('Error uploading file: ');
-        setResponseMessage('Error during upload: ');
-      }
-    };
-  
-    return (
-      <div>
-        <h2>Upload Your Resume</h2>
-        <input type="file" accept=".pdf, .doc, .docx, .txt" onChange={handleFileChange} />
-        
-        {file && (
-          <div>
-            <p>File Name: {file.name}</p>
-            <p>File Size: {(file.size / 1024).toFixed(2)} KB</p>
-            <button onClick={() => handleFileUpload(file)}>Upload to Squid AI</button>
+      <div
+        className="drag-area"
+        onClick={() => document.getElementById("fileInput")?.click()}
+        onDrop={handleDrop}  // Handle drop event
+        onDragOver={handleDragOver}  // Handle drag over event
+      >
+        {file ? (
+          <div className="file-preview">
+            <p className="file-name">{file.name}</p>
+            <p className="file-size">{(file.size / 1024).toFixed(2)} KB</p>
+          </div>
+        ) : (
+          <div className="upload-prompt">
+            <p className="drag-text">Drag & Drop Your Resume Here</p>
+            <p>OR</p>
+            <button className="browse-button">Browse Files</button>
           </div>
         )}
-        
-        <p>{uploadStatus}</p>
-        {responseMessage && <p>{responseMessage}</p>}
       </div>
-    );
-  };
-  
-  export default FileUpload;
+      <input
+        type="file"
+        id="fileInput"
+        className="hidden"
+        accept=".pdf, .doc, .docx, .txt"
+        onChange={handleFileChange}
+      />
+
+      {file && (
+        <div className="upload-button-container">
+          <button
+            onClick={() => handleFileUpload(file)}
+            className="upload-button"
+            disabled={loading}
+          >
+            {loading ? 'Uploading...' : 'Upload to Squid AI'}
+          </button>
+        </div>
+      )}
+
+      {uploadStatus && (
+        <p className={`status-message ${loading ? 'loading' : error ? 'error' : 'success'}`}>
+          {uploadStatus}
+        </p>
+      )}
+
+      {responseMessage && (
+        <p className="response-message">{responseMessage}</p>
+      )}
+
+      {error && <p className="error-message">{error}</p>}
+    </div>
+  );
+};
+
+export default FileUploadTest;

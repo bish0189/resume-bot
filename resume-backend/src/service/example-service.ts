@@ -1,4 +1,4 @@
-import { executable, secureDatabase, SquidService, webhook, SquidFile } from '@squidcloud/backend';
+import { executable, secureDatabase, SquidService, webhook, SquidFile, trigger, TriggerRequest } from '@squidcloud/backend';
 import { Buffer } from 'buffer';
 
 /**
@@ -133,8 +133,34 @@ export class ExampleService extends SquidService {
 
       console.log('Data saved to Squid AI database:', extractedData);
 
+///////////
+
+      // Define the prompt for the agent to process the resume text
+      const prompt = `
+        Please process the following resume content into a more human-readable format, including key sections like:
+        - Name
+        - Contact Information
+        - Education
+        - Work Experience
+        - Skills
+        - Summary
+        Text: ${extractedData.text}
+      `;
+
+      // Use Squid AI's agent to process the resume text and ask for a more readable version
+      const response = await this.squid
+        .ai()
+        .agent('resume-reader')  // Replace with your actual agent ID
+        .ask(prompt);
+
+
+
+
+
+///////////
+
       // Example response after processing the resume
-      return { status: 'success', message: `File ${file.originalName} processed successfully! ${extractedResult.pages[0].text}` };
+      return { status: 'success', message: `${response} File ${file.originalName} processed successfully! ${extractedResult.pages[0].text}` };
     } catch (error) {
       return { status: 'failed', message: `Error processing the file: ${error.message}` };
     }
