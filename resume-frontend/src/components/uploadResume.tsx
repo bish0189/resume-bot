@@ -15,7 +15,13 @@ const FileUpload: React.FC = () => {
         setFile(uploadedFile);
       }
     };
-  
+
+    // Convert the ArrayBuffer to a Base64 string
+    const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+      const binary = String.fromCharCode(...new Uint8Array(buffer));
+      return window.btoa(binary);
+    };    
+
     const handleFileUpload = async (file: File) => {
       if (!file || !squid) return;  // Ensure file and squid client are available
   
@@ -25,12 +31,19 @@ const FileUpload: React.FC = () => {
         // Additional parameters you may want to send
         const otherParams = { additionalInfo: 'Optional extra parameter' };
   
+        // Convert the file into an array buffer (binary data)
+        const arrayBuffer = await file.arrayBuffer();
+        
+        // Convert the arrayBuffer to Base64
+        const base64Data = arrayBufferToBase64(arrayBuffer);
+        
+        // Create an object with the correct file structure
         const squidFile = {
           originalName: file.name,
           lastModified: file.lastModified,
-          data: file.arrayBuffer(),
+          data: base64Data, // Send base64 string instead of ArrayBuffer
           size: file.size,
-          mimetype: file.type
+          mimetype: file.type,
         };
 
         console.log('SquidFile object being sent:', squidFile);

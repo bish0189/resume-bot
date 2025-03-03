@@ -48,10 +48,10 @@ export class ExampleService extends SquidService {
         return { status: 'failed', message: 'No files uploaded' };
       }
 
-      console.log('Received request:', request);
+      //console.log('Received request:', request);
 
       const file = files[0];
-      console.log('Received SquidFile:', file.data);
+      //console.log('Received SquidFile:', file.data);
 
       // Check if file.data exists before proceeding
       if (!file.data) {
@@ -59,11 +59,7 @@ export class ExampleService extends SquidService {
       }
 
       // Check the type of file.data
-      console.log('Type of file.data:', typeof file.data);      
-
-      // Check if the SquidFile contains the necessary properties
-      const fileName = file.originalName || 'default_name.txt';  // Fallback name if originalName is missing pdf
-      const mimeType = file.mimetype || '1';  // Fallback MIME type if mimetype is missing application/pdf
+      //console.log('Type of file.data:', typeof file.data);      
 
       let fileData: Buffer | null = null;  // Initializing with null
 
@@ -83,11 +79,11 @@ export class ExampleService extends SquidService {
         return { status: 'failed', message: 'File data is invalid' };
       }
 
-      console.log("Decoded file data:", fileData);
+      //console.log("Decoded file data:", fileData);
 
       // Continue processing...
-      const convertedFile = new File([fileData], fileName, {
-        type: mimeType,
+      const convertedFile = new File([fileData], file.originalName, {
+        type: file.mimetype,
         lastModified: Date.now(),
       });
   
@@ -97,8 +93,8 @@ export class ExampleService extends SquidService {
 
 
       // Use Squid AI's built-in storage API to upload the file
-      const doc = this.squid.collection('testCollection').doc();  // Use the appropriate collection
-      await doc.insert(convertedFile);  // Insert the file into Squid AI's built-in storage
+      //const doc = this.squid.collection('testCollection').doc();  // Use the appropriate collection
+      //await doc.insert(convertedFile);  // Insert the file into Squid AI's built-in storage
 
       console.log('File uploaded to Squid AI storage:', convertedFile);
 
@@ -108,18 +104,34 @@ export class ExampleService extends SquidService {
       // - Extract information
       // - Send the information to an AI model
 
-      const doc1 = this.squid.collection('test1').doc();
-      await doc.insert(convertedFile);
-
-      const data = {
-        file: file,  // Pass the file directly (SquidFile type is accepted)
-        name: file.originalName,
-      };
-
       const extractionClient = this.squid.extraction();
 
       const extractedResult = await extractionClient.extractDataFromDocumentFile(convertedFile);
       console.log('Extracted text:' + extractedResult.pages[0].text); // Extracted text of the first page
+
+      // Concatenate text from all pages
+      let fullText = '';
+      extractedResult.pages.forEach((page) => {
+        fullText += page.text + '\n';  // Add a newline between pages for separation
+      });
+
+      // Structure the data for insertion into Squid's database
+      const extractedData = {
+        fileName: file.originalName,
+        mimeType: file.mimetype,
+        text: fullText,  // Full extracted text from the document
+        processedAt: new Date().toISOString(),  // Add a timestamp of when the file was processed
+      };
+
+      // Log the extracted data before inserting
+      console.log('Structured data to be saved:', extractedData);
+
+      // Save the structured data into Squid AI's built-in database
+      const collection = this.squid.collection('resumes');  // Choose the appropriate collection name
+      const doc = collection.doc();  // Create a new document ID
+      await doc.insert(extractedData);  // Insert the structured data
+
+      console.log('Data saved to Squid AI database:', extractedData);
 
       // Example response after processing the resume
       return { status: 'success', message: `File ${file.originalName} processed successfully! ${extractedResult.pages[0].text}` };
