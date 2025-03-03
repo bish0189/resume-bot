@@ -68,7 +68,7 @@ const FileUploadTest: React.FC = () => {
 
       if (response) {
         setUploadStatus('File uploaded and processed successfully!');
-        setResponseMessage(response.message);
+        setResponseMessage(response.message); // Assuming the formatted text is inside response.message
       } else {
         setUploadStatus('File upload failed.');
         setResponseMessage('There was an error with the file upload.');
@@ -131,7 +131,13 @@ const FileUploadTest: React.FC = () => {
       )}
 
       {responseMessage && (
-        <p className="response-message">{responseMessage}</p>
+        <div className="response-message-container">
+          <h3>Formatted Resume</h3>
+          <div
+            className="formatted-text"
+            dangerouslySetInnerHTML={{ __html: responseMessage.replace(/\n/g, "<br />") }} // This replaces newlines with <br />
+          />
+        </div>
       )}
 
       {error && <p className="error-message">{error}</p>}
