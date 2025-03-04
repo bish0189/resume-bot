@@ -172,4 +172,134 @@ export class ExampleService extends SquidService {
     }
   }
 //${response}  ${extractedResult.pages[0].text}
+
+
+  // Define the trigger: this will fire whenever new data is added to the 'resume_text' entity
+  @trigger('dataInserted', 'resumes')
+  async handleResumeTextInsert(request: TriggerRequest): Promise<void> {
+    try {
+      // Extract the resume text from the trigger request
+      const resumeText = request.docAfter;
+      const resumeId = request.squidDocId;
+
+      console.log('New resume text added with ID:', resumeId);
+      //console.log('Resume Text:', resumeText.text);
+
+      // Define the prompt for the AI to process the resume text
+      const prompt = `
+        Please process the following resume content into a format that can be easily read by regex for insertion into a database, including key sections like:
+        - Name
+        - Contact Information
+        - Education
+        - Work Experience
+        - Skills
+        - Summary
+        Text: ${resumeText.text}
+      `;
+
+      // Use Squid AI's agent to process the resume text and ask for a more readable version
+      const response = await this.squid
+        .ai()
+        .agent('resume-reader')  // Replace with your actual agent ID
+        .ask(prompt);
+
+      //console.log('AI Response:', response);
+
+      // Delete
+      const userRef = this.squid.collection('resumes_parsed').doc('trevor_bishop');
+
+      try {
+        await userRef.delete();
+        console.log('User deleted successfully');
+      } catch (error) {
+        console.error(`Failed to delete user ${error}`);
+      }
+
+      ///
+
+      // Parse the response (assuming it is in the format given in the example)
+      const parsedData = this.parseResumeData(response);
+
+      // Now insert the parsed data into the Squid AI database
+      await this.insertDataToDatabase(parsedData);
+
+    } catch (error) {
+      console.error('Error processing resume text:', error);
+    }
+  }
+
+  // Function to parse the resume data
+  parseResumeData(response: string): any {
+    const data: any = {};
+
+    // Use regex to extract sections from the response
+    const nameRegex = /^Name:\s*(.*)$/m;
+    const contactRegex = /Contact Information:[\s\S]*?(Location:\s*.*\nPhone:\s*.*\nEmail:\s*.*\nLinkedIn:\s*.*)/m;
+    const summaryRegex = /Summary:[\s\S]*?Work Experience:/m;
+    const workExpRegex = /Work Experience:[\s\S]*?Education:/m;
+    const skillsRegex = /Skills:[\s\S]*$/m;
+
+    // Extract each section from the response
+    const nameMatch = response.match(nameRegex);
+    const contactMatch = response.match(contactRegex);
+    const summaryMatch = response.match(summaryRegex);
+    const workExpMatch = response.match(workExpRegex);
+    const skillsMatch = response.match(skillsRegex);
+
+    if (nameMatch) data.name = nameMatch[1].trim();
+    if (contactMatch) data.contactInfo = this.parseContactInfo(contactMatch[1]);
+    if (summaryMatch) data.summary = summaryMatch[0].trim();
+    if (workExpMatch) data.workExperience = workExpMatch[0].trim();
+    if (skillsMatch) data.skills = skillsMatch[0].trim();
+
+    return data;
+  }
+
+  // Function to parse the Contact Information section into its individual components
+  parseContactInfo(contactText: string): any {
+    const contactData: any = {};
+
+    // Use regex to extract individual contact items
+    const locationRegex = /Location:\s*(.*)/;
+    const phoneRegex = /Phone:\s*(.*)/;
+    const emailRegex = /Email:\s*(.*)/;
+    const linkedinRegex = /LinkedIn:\s*(.*)/;
+
+    // Extract each contact info field
+    const locationMatch = contactText.match(locationRegex);
+    const phoneMatch = contactText.match(phoneRegex);
+    const emailMatch = contactText.match(emailRegex);
+    const linkedinMatch = contactText.match(linkedinRegex);
+
+    if (locationMatch) contactData.location = locationMatch[1].trim();
+    if (phoneMatch) contactData.phone = phoneMatch[1].trim();
+    if (emailMatch) contactData.email = emailMatch[1].trim();
+    if (linkedinMatch) contactData.linkedin = linkedinMatch[1].trim();
+
+    return contactData;
+  }
+
+  // Function to insert the parsed data into the Squid AI database
+  async insertDataToDatabase(parsedData: any): Promise<void> {
+    try {
+      // Insert parsed resume data into the Squid AI database
+      await this.squid
+        .collection('resumes_parsed')  // The name of the collection where you want to insert
+        .doc(parsedData.name.replace(/\s+/g, '_').toLowerCase())  // Generating a document ID from the name
+        .insert({
+          name: parsedData.name,
+          contactInfo: parsedData.contactInfo,  // This will be an object containing location, phone, email, linkedin
+          summary: parsedData.summary,
+          workExperience: parsedData.workExperience,
+          skills: parsedData.skills,
+        });
+
+      console.log('Resume data inserted successfully');
+
+    } catch (error) {
+      console.error('Failed to insert resume data:', error);
+    }
+  }
 }
+
+
