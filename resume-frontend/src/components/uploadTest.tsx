@@ -43,7 +43,7 @@ const FileUploadTest: React.FC = () => {
     
     try {
       setUploadStatus('Uploading...');
-      
+
       const otherParams = { additionalInfo: 'Optional extra parameter' };
       const arrayBuffer = await file.arrayBuffer();
       const base64Data = arrayBufferToBase64(arrayBuffer);
@@ -83,6 +83,9 @@ const FileUploadTest: React.FC = () => {
 
   return (
     <div className="file-upload-container">
+      {/* Add your image here */}
+      <img src="/squid.svg" alt="Top Image" className="top-image" />
+      
       <h2 className="header">Upload Your Resume</h2>
 
       <div
