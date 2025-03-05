@@ -22,23 +22,6 @@ export class ExampleService extends SquidService {
     return true;
   }
 
-  @webhook('example-service-webhook')
-  handleExampleServiceWebhook(): object {
-    const response = {
-      message: `Hello from 'example-service-webhook'`,
-      date: new Date().toString(),
-      appId: this.context.appId,
-    };
-    console.log(response); // This message will appear in the "Logs" tab of the Squid Console.
-    return response;
-  }
-
-  @executable()
-  concat(str1: string, str2: string): string {
-    return `${str1}${str2}`;
-  }
-
-
   @executable()
   async processResume(request: { files: Array<SquidFile>, otherParams: any }): Promise<{ status: string, message: string }> {
     try {
@@ -58,8 +41,7 @@ export class ExampleService extends SquidService {
         return { status: 'failed', message: 'No data found in the uploaded file' };
       }
 
-      // Check the type of file.data
-      //console.log('Type of file.data:', typeof file.data);      
+      // Check the type of file.data     
 
       let fileData: Buffer | null = null;  // Initializing with null
 
@@ -88,26 +70,13 @@ export class ExampleService extends SquidService {
       });
   
       // Log the entire converted file object to inspect its properties
-      console.log("Converted file:", convertedFile);
+      //console.log("Converted file:", convertedFile);
 
-
-
-      // Use Squid AI's built-in storage API to upload the file
-      //const doc = this.squid.collection('testCollection').doc();  // Use the appropriate collection
-      //await doc.insert(convertedFile);  // Insert the file into Squid AI's built-in storage
-
-      console.log('File uploaded to Squid AI storage:', convertedFile);
-
-
-      // Here you would typically process the file, for example:
-      // - Parse the resume
-      // - Extract information
-      // - Send the information to an AI model
-
+      // Use the Squid text extraction client
       const extractionClient = this.squid.extraction();
 
       const extractedResult = await extractionClient.extractDataFromDocumentFile(convertedFile);
-      console.log('Extracted text:' + extractedResult.pages[0].text); // Extracted text of the first page
+      //console.log('Extracted text:' + extractedResult.pages[0].text); // Extracted text of the first page
 
       // Concatenate text from all pages
       let fullText = '';
@@ -124,7 +93,7 @@ export class ExampleService extends SquidService {
       };
 
       // Log the extracted data before inserting
-      console.log('Structured data to be saved:', extractedData);
+      //console.log('Structured data to be saved:', extractedData);
 
       // Save the structured data into Squid AI's built-in database
       const collection = this.squid.collection('resumes');  // Choose the appropriate collection name
@@ -133,7 +102,7 @@ export class ExampleService extends SquidService {
 
       console.log('Data saved to Squid AI database:', extractedData);
 
-///////////
+/////////// Use AI agent for better readability
 
       // Define the prompt for the agent to process the resume text
       const prompt = `
@@ -144,17 +113,15 @@ export class ExampleService extends SquidService {
         - Work Experience
         - Skills
         - Summary
+        Order the Work Experience by the dates listed from most recent to least recent.
         Text: ${extractedData.text}
       `;
 
       // Use Squid AI's agent to process the resume text and ask for a more readable version
       const response = await this.squid
         .ai()
-        .agent('resume-reader')  // Replace with your actual agent ID
+        .agent('resume-reader')
         .ask(prompt);
-
-
-
 
 
 ///////////
@@ -200,20 +167,20 @@ export class ExampleService extends SquidService {
       // Use Squid AI's agent to process the resume text and ask for a more readable version
       const response = await this.squid
         .ai()
-        .agent('resume-reader')  // Replace with your actual agent ID
+        .agent('resume-reader') 
         .ask(prompt);
 
-      //console.log('AI Response:', response);
+      console.log('AI Response:', response);
 
       // Delete
-      const userRef = this.squid.collection('resumes_parsed').doc('trevor_bishop');
+      //const userRef = this.squid.collection('resumes_parsed').doc('trevor_bishop');
 
-      try {
-        await userRef.delete();
-        console.log('User deleted successfully');
-      } catch (error) {
-        console.error(`Failed to delete user ${error}`);
-      }
+      //try {
+      //  await userRef.delete();
+      //  console.log('User deleted successfully');
+      //} catch (error) {
+      //  console.error(`Failed to delete user ${error}`);
+      //}
 
       ///
 
@@ -234,7 +201,7 @@ export class ExampleService extends SquidService {
 
     // Use regex to extract sections from the response
     const nameRegex = /^Name:\s*(.*)$/m;
-    const contactRegex = /Contact Information:[\s\S]*?(Location:\s*.*\nPhone:\s*.*\nEmail:\s*.*\nLinkedIn:\s*.*)/m;
+    const contactRegex = /Contact Information:[\s\S]*?(Location:[^\n]*\nPhone:[^\n]*\nEmail:[^\n]*\nLinkedIn:[^\n]*)/m;
     const summaryRegex = /Summary:[\s\S]*?Work Experience:/m;
     const workExpRegex = /Work Experience:[\s\S]*?Education:/m;
     const skillsRegex = /Skills:[\s\S]*$/m;
@@ -282,6 +249,9 @@ export class ExampleService extends SquidService {
   // Function to insert the parsed data into the Squid AI database
   async insertDataToDatabase(parsedData: any): Promise<void> {
     try {
+
+      console.log("Parsed Contact Info:", parsedData.contactInfo);
+
       // Insert parsed resume data into the Squid AI database
       await this.squid
         .collection('resumes_parsed')  // The name of the collection where you want to insert
@@ -292,6 +262,7 @@ export class ExampleService extends SquidService {
           summary: parsedData.summary,
           workExperience: parsedData.workExperience,
           skills: parsedData.skills,
+         // processedAt: new Date().toISOString(),
         });
 
       console.log('Resume data inserted successfully');
